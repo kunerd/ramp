@@ -589,8 +589,12 @@ impl Int {
         let mut y = (*other).clone().abs();
         let mut g = Int::one();
 
-        if x <= y {
+        if x == Int::zero() {
             return y;
+        }
+
+        if y == Int::zero() {
+            return x;
         }
 
         while x.is_even() && y.is_even() && x != Int::zero() && y != Int::zero() {
@@ -628,7 +632,7 @@ impl Int {
     /// Calculates the Lowest Common Multiple (LCM) of the number and `other`.
     #[inline]
     pub fn lcm(&self, other: &Int) -> Int {
-        ((self * other) / self.gcd(other)).abs()
+        (self * other).abs() / self.gcd(other)
     }
 
     pub fn is_even(&self) -> bool {
@@ -3179,7 +3183,9 @@ mod test {
 
         check(10, 2, 2);
         check(10, 3, 1);
+        check(3, 0, 3);
         check(0, 3, 3);
+        check(0, 0, 0);
         check(3, 3, 3);
         check(56, 42, 14);
         check(3, -3, 3);
