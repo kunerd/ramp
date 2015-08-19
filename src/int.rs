@@ -567,60 +567,62 @@ impl Int {
     /// Calculates the Greatest Common Divisor (GCD) of the number and `other`.
     ///
     /// The result is always positive.
-    #[inline]
-    pub fn gcd(&self, other: &Int) -> Int {
-        // println!("{}, {}", self, other);
-        assert!(self >= other);
-        // Use Euclid's algorithm
-        // let mut m = (*self).clone();
-        // let mut n = (*other).clone();
-        //
-        // while  m != Int::zero() {
-        //     let temp = m;
-        //     m = n % &temp;
-        //     // FIXME this should be done by rem
-        //     m.normalize();
-        //     n = temp;
-        // }
-        //
-        // n.abs()
 
-        // #####
+    fn euclids_gcd(&self, other: &Int) -> Int {
+        // Use Euclid's algorithm
+        let mut m = (*self).clone();
+        let mut n = (*other).clone();
+
+        while  m != Int::zero() {
+            let temp = m;
+            m = n % &temp;
+            // FIXME this should be done by rem
+            m.normalize();
+            n = temp;
+        }
+
+        n.abs()
+    }
+
+    fn binary_gcd (&self, other: &Int) -> Int {
+        let mut x = (*self).clone().abs();
+        let mut y = (*other).clone().abs();
         let mut g = Int::one();
 
-        let mut x = (*self).clone();
-        let mut y = (*other).clone();
+        if x <= y {
+            return y;
+        }
 
-        while x.is_even() && y.is_even() {
+        while x.is_even() && y.is_even() && x != Int::zero() && y != Int::zero() {
             x = x >> 1;
             y = y >> 1;
-            g = 2 * g;
-
-            // println!("{}, {}", x, y);
+            g = g << 1;
         }
-        // println!("a");
+
         while x != Int::zero() {
-            while x.is_even() {
+            while x.is_even() && x != Int::zero(){
                 x = x >> 1;
             }
 
-            while y.is_even() {
+            while y.is_even() && y != Int::zero(){
                 y = y >> 1;
             }
 
             let t = (&x - &y).abs() >> 1;
-            // println!("{}, {}", x, y);
-            // println!("{}", t);
             if x >= y {
                 x = t;
             } else {
                 y = t;
             }
-            // println!("{}, {}", x, y);
-
         }
 
         g * y
+    }
+
+    #[inline]
+    pub fn gcd(&self, other: &Int) -> Int {
+        // self.euclids_gcd(other)
+        self.binary_gcd(other)
     }
 
     /// Calculates the Lowest Common Multiple (LCM) of the number and `other`.
@@ -3148,6 +3150,24 @@ mod test {
     }
 
     #[test]
+    fn test_is_even() {
+        fn check(a: isize, b: bool) {
+            let big_a: Int = Int::from(a);
+
+            assert_eq!(big_a.is_even(), b);
+        }
+
+        check(-2, true);
+        check(-1, false);
+        check(0, true);
+        check(1, false);
+        check(2, true);
+        check(5, false);
+        check(102, true);
+        check(103, false);
+    }
+
+    #[test]
     fn test_gcd() {
         fn check(a: isize, b: isize, c: isize) {
             let big_a: Int = Int::from(a);
@@ -3159,18 +3179,13 @@ mod test {
 
         check(10, 2, 2);
         check(10, 3, 1);
-        // check(0, 3, 3);
+        check(0, 3, 3);
         check(3, 3, 3);
         check(56, 42, 14);
-
-        check(10, 2, 2);
-        check(10, 3, 1);
-        // check(0, 3, 3);
-        check(3, 3, 3);
-        check(56, 42, 14);
-        // check(3, -3, 3);
-        // check(-6, 3, 3);
-        // check(-4, -2, 2);
+        check(3, -3, 3);
+        check(-6, 3, 3);
+        check(-4, -2, 2);
+        check(1764, 868, 28);
     }
 
     #[test]
@@ -3409,10 +3424,10 @@ mod test {
     fn bench_gcd_128bit_128bit(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
 
-        let x = rng.gen_uint(12);
-        let y = rng.gen_uint_below(&x);
 
         b.iter(|| {
+            let x = rng.gen_uint(128);
+            let y = rng.gen_uint_below(&x);
 
             x.gcd(&y);
         });
