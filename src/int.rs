@@ -623,10 +623,77 @@ impl Int {
         g * y
     }
 
+    fn binary_extended_gcd(&self, other: &Int) -> Int {
+        let mut x = (*self).clone().abs();
+        let mut y = (*other).clone().abs();
+        let mut g = Int::one();
+
+        if x == Int::zero() {
+            return y;
+        }
+
+        if y == Int::zero() {
+            return x;
+        }
+
+        while x.is_even() && y.is_even() && x != Int::zero() && y != Int::zero() {
+            x = x >> 1;
+            y = y >> 1;
+            g = g << 1;
+        }
+
+        let mut u = x.clone();
+        let mut v = y.clone();
+
+        let mut a = Int::one();
+        let mut b = Int::zero();
+        let mut c = Int::zero();
+        let mut d = Int::one();
+
+        while u != Int::zero() {
+            while u.is_even() && u != Int::zero() {
+                u = u >> 1;
+                if a.is_even() && b.is_even() {
+                    a = a >> 1;
+                    b = b >> 1;
+                } else {
+                    a = (a + &y) >> 1;
+                    b = (b - &x) >> 1;
+                }
+            }
+
+            while v.is_even() && v != Int::zero() {
+                v = v >> 1;
+                if c.is_even() && d.is_even() {
+                    c = c >> 1;
+                    d = d >> 1;
+                } else {
+                    c = (c + &y) >> 1;
+                    d = (d - &x) >> 1;
+                }
+            }
+
+            if u >= v {
+                // u = u - &v;
+                // a = a - &c;
+                // b = b - &d;
+            } else {
+                v = v - &u;
+                // c = c - &a;
+                // d = d - &b;
+            }
+        }
+        // a = c;
+        // b = d;
+
+        g * v
+    }
+
     #[inline]
     pub fn gcd(&self, other: &Int) -> Int {
         // self.euclids_gcd(other)
-        self.binary_gcd(other)
+        // self.binary_gcd(other)
+        self.binary_extended_gcd(other)
     }
 
     /// Calculates the Lowest Common Multiple (LCM) of the number and `other`.
