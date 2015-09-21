@@ -563,6 +563,83 @@ impl Int {
 
         return high_limb != 0;
     }
+
+    /// Calculates the Greatest Common Divisor (GCD) of the number and `other`.
+    ///
+    /// The result is always positive.
+
+    fn euclids_gcd(&self, other: &Int) -> Int {
+        // Use Euclid's algorithm
+        let mut m = (*self).clone();
+        let mut n = (*other).clone();
+
+        while  m != Int::zero() {
+            let temp = m;
+            m = n % &temp;
+            // FIXME this should be done by rem
+            m.normalize();
+            n = temp;
+        }
+
+        n.abs()
+    }
+
+    fn binary_gcd (&self, other: &Int) -> Int {
+        let mut x = (*self).clone().abs();
+        let mut y = (*other).clone().abs();
+        let mut g = Int::one();
+
+        if x == Int::zero() {
+            return y;
+        }
+
+        if y == Int::zero() {
+            return x;
+        }
+
+        while x.is_even() && y.is_even() && x != Int::zero() && y != Int::zero() {
+            x = x >> 1;
+            y = y >> 1;
+            g = g << 1;
+        }
+
+        while x != Int::zero() {
+            while x.is_even() && x != Int::zero(){
+                x = x >> 1;
+            }
+
+            while y.is_even() && y != Int::zero(){
+                y = y >> 1;
+            }
+
+            let t = (&x - &y).abs() >> 1;
+            if x >= y {
+                x = t;
+            } else {
+                y = t;
+            }
+        }
+
+        g * y
+    }
+
+    #[inline]
+    pub fn gcd(&self, other: &Int) -> Int {
+        // self.euclids_gcd(other)
+        self.binary_gcd(other)
+    }
+
+    /// Calculates the Lowest Common Multiple (LCM) of the number and `other`.
+    #[inline]
+    pub fn lcm(&self, other: &Int) -> Int {
+        (self * other).abs() / self.gcd(other)
+    }
+
+    pub fn is_even(&self) -> bool {
+        unsafe {
+            ll::scan_0(&self.to_single_limb(), 1) == 0
+        }
+    }
 }
 
 impl Clone for Int {
@@ -3076,6 +3153,74 @@ mod test {
         });
     }
 
+    #[test]
+    fn test_is_even() {
+        fn check(a: isize, b: bool) {
+            let big_a: Int = Int::from(a);
+
+            assert_eq!(big_a.is_even(), b);
+        }
+
+        check(-2, true);
+        check(-1, false);
+        check(0, true);
+        check(1, false);
+        check(2, true);
+        check(5, false);
+        check(102, true);
+        check(103, false);
+    }
+
+    #[test]
+    fn test_gcd() {
+        fn check(a: isize, b: isize, c: isize) {
+            let big_a: Int = Int::from(a);
+            let big_b: Int = Int::from(b);
+            let big_c: Int = Int::from(c);
+
+            assert_eq!(big_a.gcd(&big_b), big_c);
+        }
+
+        check(10, 2, 2);
+        check(10, 3, 1);
+        check(3, 0, 3);
+        check(0, 3, 3);
+        check(0, 0, 0);
+        check(3, 3, 3);
+        check(56, 42, 14);
+        check(3, -3, 3);
+        check(-6, 3, 3);
+        check(-4, -2, 2);
+        check(1764, 868, 28);
+    }
+
+    #[test]
+    fn test_lcm() {
+        fn check(a: isize, b: isize, c: isize) {
+            let big_a: Int = Int::from(a);
+            let big_b: Int = Int::from(b);
+            let big_c: Int = Int::from(c);
+
+            assert_eq!(big_a.lcm(&big_b), big_c);
+        }
+
+        check(1, 0, 0);
+        check(0, 1, 0);
+        check(1, 1, 1);
+        check(8, 9, 72);
+        check(11, 5, 55);
+        check(99, 17, 1683);
+
+        check(1, 0, 0);
+        check(0, 1, 0);
+        check(1, 1, 1);
+        check(-1, 1, 1);
+        check(1, -1, 1);
+        check(-1, -1, 1);
+        check(8, 9, 72);
+        check(11, 5, 55);
+    }
+
     #[bench]
     fn bench_add_1_1(b: &mut Bencher) {
         bench_add(b, 1, 1);
@@ -3280,4 +3425,18 @@ mod test {
     fn bench_div_1000_1000(b: &mut Bencher) {
         bench_div(b, 1000, 1000);
     }
+
+    #[bench]
+    fn bench_gcd_128bit_128bit(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+
+
+        b.iter(|| {
+            let x = rng.gen_uint(128);
+            let y = rng.gen_uint_below(&x);
+
+            x.gcd(&y);
+        });
+    }
+
 }
