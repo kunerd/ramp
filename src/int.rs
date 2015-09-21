@@ -1420,6 +1420,7 @@ impl Rem<Limb> for Int {
                 self.shrink_to_fit();
             }
         }
+        self.normalize();
 
         return self;
     }
